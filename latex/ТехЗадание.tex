@@ -1,0 +1,1057 @@
+\lstset{
+	language=Java,
+	basicstyle=\small\ttfamily\setstretch{0.8},
+	keywordstyle=\color{blue},
+	commentstyle=\color{green},
+	stringstyle=\color{red},
+	numbers=left,
+	breaklines=true,
+	captionpos=b,
+	tabsize=2,
+	showspaces=false,
+	showstringspaces=false,
+	lineskip=-1pt
+}
+
+\section{Техническое задание}
+\subsection{Основание для разработки}
+Основанием для разработки является задание на выпускную квалификационную работу бакалавра, посвящённую созданию игрового движка, предназначенного для разработки трёхмерных интерактивных приложений.
+
+Разрабатываемая система создаётся в рамках преддипломной практики как программное средство, обеспечивающее управление графическим рендерингом через OpenGL, обработку пользовательского ввода, загрузку и управление игровыми ресурсами, создание камер и источников освещения для того чтобы создавать игровые приложения без использования сторонних коммерческих движков.
+
+\subsection{Цель и назначение разработки}
+Основной целью работы является разработка и внедрение игрового движка для создания 3D интерактивных приложений в реальном времени.
+
+Назначение разрабатываемой системы заключается в объединении в рамках единой программной платформы управления сценами, обработки иерархии игровых объектов, настройки камер и источников света, а также импорта трёхмерных моделей в форматах STL и GLB с возможностью их визуализации и трансформации в сцене.
+
+Задачами разработки являются:
+
+\begin{enumerate}	
+	\item Реализовать графическую подсистему на базе OpenGL, включающую создание окна и контекста рендеринга, загрузку вершинных и индексных буферов, компиляцию шейдерных программ, а также отрисовку трёхмерных объектов.
+	
+	\item Реализовать систему управления игровыми объектами и компонентами, позволяющую динамически создавать, уничтожать и модифицировать объекты на сцене, а также организовывать их иерархическую структуру.
+	
+	\item Реализовать подсистему обработки пользовательского ввода с клавиатуры и мыши, обеспечивающую опрос состояния устройств и генерацию событий нажатия и отпускания клавиш.
+	
+	\item Разработать компонент камеры, поддерживающий ортографическую и перспективную проекции, а также интерактивное управление положением и направлением обзора.
+	
+	\item Создать демонстрационное приложение, наглядно показывающее все реализованные возможности движка, включая сцену с несколькими объектами и источниками света.
+	
+	\item Подготовить документацию, описывающую архитектуру движка, интерфейсы программных модулей и инструкцию по созданию демо-сцены на основе разработанного движка.
+\end{enumerate}
+
+\subsection{Библиотека движка}
+\subsubsection{Требования к функционалу движка}
+
+Программный продукт должен обеспечивать выполнение следующих функций:
+
+\begin{enumerate}
+	\item Система должна поддерживать бинарный формат stl и должна прекращать импорт модели, если она представлена ASCII форматом.
+	
+	\item Импортер stl моделей должен поддерживать их 5-битные цвета. В случае, когда бит цвета положительный, он должен создавать на их основе массив цветов вершин.
+	
+	\item Система должна ограничивать максимальный допустимый размер импортируемых моделей. При загрузке слишком большой модели она должна выводить сообщение об ошибке.
+	
+	\item Система должна автоматически определять узел модели среди других узлов glb файла. При отсутствие узла в списке скелета, узлом модели должен считаться узел с мешем.
+	
+	\item Импортер glb-файлов должен поддерживать бинарный данные, закодированные в uri в формате строки base64. В случае обнаружения таких свойств он должен парсить их в бинарные данные.
+	
+	\item Импортер glb-файла должен поддерживать разреженные аксессоры.
+	
+	\item Импортер glb-файла должен правильно обрабатывать модели, содержащие более одной сцены. В случае наличия нескольких сцен должен возвращаться из массив.
+	
+	\item Шейдер игрового объекта должен строиться после добавления этого объекта в сцену. До этого момента объект должен быть без шейдера.
+	
+	\item У пользователя должна быть возможность менять настройки рендера, глобальные настройки и модель освещения как для отдельных объектов, так и на глобальном уровне. Настройки можно будет менять во время выполнения программы.
+	
+	\item При добавлении новой камеры, менеджер должен проверять наличие этой камеры в своем кэше. При добавлении той же камеры, в консоль должно выводиться сообщение об ошибке.
+	
+	\item Шейдеры объекта должны храниться в пуле. Если пользователь создает объект с таким же по структуре материалом, ему должен присваиваться уже существующий шейдер.
+	
+	\item Шейдеры должны быть индивидуальными под каждый материал. Все различия логики обработки шейдера должны определяться на этапе компиляции, а не во время его работы.
+	
+	\item У сцены и объектов должны быть хуки для взаимодействия с игрой.
+	
+	\item Все пользовательские данные должны валидироваться системой. Должны проверяться данные настроек камеры, свойств объектов и света и всех остальных сущностей движка.
+	
+\end{enumerate}
+\subsubsection{Описание API движка}
+\paragraph{Класс CameraManager}
+
+Данный класс необходим для управления камерами сцены. В таблице \ref{table1:table} представлены методы класса CameraManager.
+
+\begin{xltabular}{\textwidth}{|>{\raggedright\arraybackslash}p{6cm}|>{\raggedright\arraybackslash}X|}
+	\caption{Методы класса CameraManager\label{table1:table}}\\ \hline
+	~ \centrow Имя & \centrow Описание \\ \hline
+	\endfirsthead
+	\continuecaption{Продолжение таблицы \ref{table1:table}}
+	~ \centrow Имя & \centrow Описание \\ \hline 
+	\finishhead
+	AddCamera(Camera cam) & Добавляет камеру в сцену. cam - камера которую нужно добавить. Возврат - bool, результат добавления. \\ \hline
+	RemoveCamera(Predicate
+	<Camera> condition) & Удаляет камеру из сцены. condition - условие удаления. Возврат - int, количество удаленных камер. \\ \hline
+	RemoveCameraAt(int index) & Удаляет камеру из сцены. index - индекс удаляемой камеры. Возврат - bool, результат удаления. \\ \hline
+	FindCameras(Predicate
+	<Camera> condition) & Получает камеры из сцены. condition - условие поиска. Возврат - IEnumerable<Camera>, коллекция камер. \\ \hline
+	GetCameraAt(int index) & Получает камеру из сцены. index - индекс получаемой камеры. Возврат - Camera?, получанная камера. \\ \hline
+	Clear() & Удаляет все камеры из сцены.
+\end{xltabular}
+
+В таблице \ref{table2:table} представлены свойства класса CameraManager. \\
+
+\begin{xltabular}{\textwidth}{|>{\raggedright\arraybackslash}p{6cm}|>{\raggedright\arraybackslash}X|}
+	\caption{Свойства класса CameraManager\label{table2:table}}\\ \hline
+	~ \centrow Имя & \centrow Описание \\ \hline
+	\endfirsthead
+	\continuecaption{Продолжение таблицы \ref{table2:table}}
+	~ \centrow Имя & \centrow Описание \\ \hline 
+	\finishhead
+	Cameras & Коллекция камер сцены. \\ \hline
+	CameraCount & Количество камер в сцене.
+\end{xltabular}
+
+В таблице \ref{table3:table} представлены события класса CameraManager.
+
+\begin{xltabular}{\textwidth}{|>{\raggedright\arraybackslash}p{6cm}|>{\raggedright\arraybackslash}X|}
+	\caption{События класса CameraManager\label{table3:table}}\\ \hline
+	~ \centrow Имя & \centrow Описание \\ \hline
+	\endfirsthead
+	\continuecaption{Продолжение таблицы \ref{table3:table}}
+	~ \centrow Имя & \centrow Описание \\ \hline 
+	\finishhead
+	CameraAdded & Вызывается при добавлении новой камеры. \\ \hline
+	CameraRemoved & Вызывается при удалении камеры. \\ \hline
+	OnClear & Вызывается при срабатывании метода Clear().
+\end{xltabular}
+
+\paragraph{Класс GameObjectManager}
+
+Данный класс нужен для взаимодействия с игровыми объектами сцены. В таблице \ref{table4:table} представлены методы класса GameObjectManager.
+
+\begin{xltabular}{\textwidth}{|>{\raggedright\arraybackslash}p{6cm}|>{\raggedright\arraybackslash}X|}
+	\caption{Методы класса GameObjectManager\label{table4:table}}\\ \hline
+	~ \centrow Имя & \centrow Описание \\ \hline
+	\endfirsthead
+	\continuecaption{Продолжение таблицы \ref{table4:table}}
+	~ \centrow Имя & \centrow Описание \\ \hline 
+	\finishhead
+	RemoveGameObjects
+	(Predicate<DrawableObject> condition) & Удаляет игровые объекты из сцены. condition - условие удаления. Возврат - int, количество удаленных объектов. \\ \hline
+	AddGameObject(
+	DrawableObject obj) & Добавляет игровой объект в сцену. obj - добавляемый объект. \\ \hline
+	RemoveGameObjectAt(int index) & Удаляет игровой объект из сцены. index - индекс удаляемого объекта. Возврат - bool, результат удаления. \\ \hline
+	FindGameObjects(Predicate
+	<DrawableObject> condition) & Получает игровые объекты из сцены. condition - условие поиска. Возврат - IEnumerable<DrawableObject>, коллекция объектов. \\ \hline
+	GetGameObjectAt(int index) & Получает игровой объект из сцены. index - индекс получаемого объекта. Возврат - DrawableObject?, полученный объект. \\ \hline
+	Clear() & Удаляет все игровые объекты из сцены. \\ \hline
+	PickObject(float mouseX, float mouseY, int screenWidth, int screenHeight, Camera cam) & Проверят, попал ли курсор на объект. mouseX - x-координата мыши, mouseY - y-координата мыши, screenWidth - ширина экрана, screenHeight - высота экрана, cam - камера, для которой выпускается луч. Возврат - DrawableObject?, объект, на который попал курсор.
+\end{xltabular}
+
+В таблице \ref{table5:table} представлены свойства класса GameObjectManager.
+
+\begin{xltabular}{\textwidth}{|>{\raggedright\arraybackslash}p{6cm}|>{\raggedright\arraybackslash}X|}
+	\caption{Свойства класса GameObjectManager\label{table5:table}}\\ \hline
+	~ \centrow Имя & \centrow Описание \\ \hline
+	\endfirsthead
+	\continuecaption{Продолжение таблицы \ref{table5:table}}
+	~ \centrow Имя & \centrow Описание \\ \hline 
+	\finishhead
+	GameObjects & Коллекция игровых объектов сцены. \\ \hline
+	Count & Количество игровых объектов в сцене.
+\end{xltabular}
+
+В таблице \ref{table6:table} представлены события класса GameObjectManager.
+
+\begin{xltabular}{\textwidth}{|>{\raggedright\arraybackslash}p{6cm}|>{\raggedright\arraybackslash}X|}
+	\caption{События класса GameObjectManager\label{table6:table}}\\ \hline
+	~ \centrow Имя & \centrow Описание \\ \hline
+	\endfirsthead
+	\continuecaption{Продолжение таблицы \ref{table6:table}}
+	~ \centrow Имя & \centrow Описание \\ \hline 
+	\finishhead
+	GameObjectAdded & Вызывается при добавлении нового объекта. \\ \hline
+	GameObjectRemoved & Вызывается при удалении объекта из сцены. \\ \hline
+	OnClear & Вызывается при срабатывании метода Clear().
+\end{xltabular}
+
+\paragraph{Класс LightManager}
+
+Данный класс нужен для управления источниками света сцены. В таблице \ref{table7:table} представлены методы класса LightManager.
+
+\begin{xltabular}{\textwidth}{|>{\raggedright\arraybackslash}p{6cm}|>{\raggedright\arraybackslash}X|}
+	\caption{Методы класса LightManager\label{table7:table}}\\ \hline
+	~ \centrow Имя & \centrow Описание \\ \hline
+	\endfirsthead
+	\continuecaption{Продолжение таблицы \ref{table7:table}}
+	~ \centrow Имя & \centrow Описание \\ \hline 
+	\finishhead
+	UpdateDirectionalLightAt
+	(DirectionalLight light, int index) & Обновляет направленный источник света. light - обновляемый источник, index - индекс источника в массиве сцены. \\ \hline
+	UpdatePointLightAt
+	(PointLight light, int index) & Обновляет точечный источник света. light - обновляемый источник, index - индекс источника в массиве сцены. \\ \hline
+	UpdateSpotlightAt(Spotlight light, int index) & Обновляет прожекторный источник света. light - обновляемый источник, index - индекс источника света в массиве сцены. \\ \hline
+	UpdateDirectionalLights
+	(DirectionalLight light, Predicate<DirectionalLight> condition) & Обновляет направленные источники света. light - источник света, который будет заменять целевые источники, condition - условие поиска источников. \\ \hline
+	UpdatePointLights(PointLight light, Predicate<PointLight> condition) & Обновляет точечные источники света. light - источник света, который будет заменять целевые источники, condition - условие поиска источников. \\ \hline
+	UpdateSpotlights(Spotlight light, Predicate<Spotlight> condition) & Обновляет прожекторные источники света. light - источник света, который будет заменять целевые источники, condition - условие поиска источников. \\ \hline
+	AddDirectionalLight
+	(DirectionalLight light) & Добавляет направленный источник света в сцену. light - добавляемый источник. \\ \hline
+	AddPointLight(PointLight light) & Добавляет точечный источник света в сцену. light - добавляемый источник. \\ \hline
+	AddSpotlight(Spotlight light) & Добавляет прожекторный источник света в сцену. light - добавляемый источник. \\ \hline
+	RemoveDirectionalLights
+	(Predicate<DirectionalLight> condition) & Удаляет направленные источники света из сцены. condition - условие удаления. Возврат - int, количество удаленных источников. \\ \hline
+	RemovePointLights
+	(Predicate<PointLight> condition) & Удаляет точечные источники света из сцены. condition - условие удаления. Возврат - int, количество удаленных источников. \\ \hline
+	RemoveSpotlights
+	(Predicate<Spotlight> condition) & Удаляет прожекторные источники света из сцены. conditon - условие удаления. Возврат - int, количество удаленных источников \\ \hline
+	RemoveDirectionalLightAt(int index) & Удаляет направленный источник света из сцены. index - индекс источника света в массиве сцены. Возврат - bool, результат удаления. \\ \hline
+	RemovePointLightAt(int index) & Удаляет точечный источник света из сцены. index - индекс источника света в массиве сцены. Возврат - bool, результат удаления. \\ \hline
+	RemoveSpotlightAt(int index) & Удаляет прожекторный источник света из сцены. index - индекс источника света в массиве сцены. Возврат - bool, результат удаления. \\ \hline
+	FindDirectionalLights
+	(Predicate<DirectionalLight> condition) & Получает направленные источники света из сцены. condition - условие поиска. Возврат - IEnumerable<DirectionalLight>, коллекция источников. \\ \hline
+	FindPointLights
+	(Predicate<PointLight> condition) & Получает точечные источники света из сцены. condition - условие поиска. Возврат - IEnumerable<PointLight>, коллекция источников. \\ \hline
+	FindSpotlights
+	(Predicate<Spotlight> condition) & Получает прожекторные источники света из сцены. condition - условие поиска. Возврат - IEnumerable<Spotlight>, коллекция источников. \\ \hline
+	GetDirectionalLightAt(int index) & Получает направленный источник света из сцены. index - индекс источника света в массиве сцены. Возврат - DirectionalLight?, полученный источник. \\ \hline
+	GetPointLightAt(int index) & Получает точечный источник света из сцены. index - индекс источника света в массиве сцены. Возврат - PointLight?, полученный источник. \\ \hline
+	GetSpotlightAt(int index) & Получает прожекторный источник из сцены. index - индекс источника света в массиве сцены. Возврат - Spotlight?, полученный источник. \\ \hline
+	Clear() & Удаляет все источники света из сцены.
+\end{xltabular}
+
+
+В таблице \ref{table8:table} представлены свойства класса LightManager.
+\begin{xltabular}{\textwidth}{|>{\raggedright\arraybackslash}p{6cm}|>{\raggedright\arraybackslash}X|}
+	\caption{Свойства класса LightManager\label{table8:table}}\\ \hline
+	~ \centrow Имя & \centrow Описание \\ \hline
+	\endfirsthead
+	\continuecaption{Продолжение таблицы \ref{table8:table}}
+	~ \centrow Имя & \centrow Описание \\ \hline 
+	\finishhead
+	DirectionalLights & Коллекция наплавленных источников света сцены. \\ \hline
+	PointLights & Коллекция точечных источников света сцены. \\ \hline
+	Spotlights & Коллекция прожекторных источников света сцены.
+\end{xltabular}
+
+В таблице \ref{table9:table} представлены события класса LightManager.
+
+\begin{xltabular}{\textwidth}{|>{\raggedright\arraybackslash}p{6cm}|>{\raggedright\arraybackslash}X|}
+	\caption{События класса LightManager\label{table9:table}}\\ \hline
+	~ \centrow Имя & \centrow Описание \\ \hline
+	\endfirsthead
+	\continuecaption{Продолжение таблицы \ref{table9:table}}
+	~ \centrow Имя & \centrow Описание \\ \hline 
+	\finishhead
+	DirLightAdded & Вызывается при добавлении направленного источника света. \\ \hline
+	DirLightRemoved & Вызывается при удалении направленного источника света. \\ \hline
+	DirLightUpdated & Вызывается при обновлении направленного источника света. \\ \hline
+	PointLightAdded & Вызывается при добавлении точечного источника света. \\ \hline
+	PointLightRemoved & Вызывается при удалении точечного источника света. \\ \hline
+	PointLightUpdated & Вызывается при обновлении точечного источника света. \\ \hline
+	SpotlightAdded & Вызывается при добавлении прожекторного источника света. \\ \hline
+	SpotlightRemoved & Вызывается при удалении прожекторного источника света. \\ \hline
+	SpotlightUpdated & Вызывается при обновлении прожекторного источника света. \\ \hline
+	OnClear & Вызывается при срабатывании метода Clear().
+\end{xltabular}
+
+\paragraph{Класс SceneManager}
+
+Данный класс необходим для управления сценами игры. В таблице \ref{table10:table} представлены методы класса SceneManager.
+
+\begin{xltabular}{\textwidth}{|>{\raggedright\arraybackslash}p{6cm}|>{\raggedright\arraybackslash}X|}
+	\caption{Методы класса SceneManager\label{table10:table}}\\ \hline
+	~ \centrow Имя & \centrow Описание \\ \hline
+	\endfirsthead
+	\continuecaption{Продолжение таблицы \ref{table10:table}}
+	~ \centrow Имя & \centrow Описание \\ \hline 
+	\finishhead
+	LoadSceneByName(string name) & Загружает сцену в игру. name - имя сцены. Для загрузки сцены по имени ее нужно зарегистрировать методом RegisterScene(BaseScene scene). \\ \hline
+	LoadScene(BaseScene scene) & Загружает сцену в игру. scene - целевая сцена, которую нужно загрузить. \\ \hline
+	UnloadScene() & Выгружает текущую сцену. \\ \hline
+	RegisterScene(BaseScene scene) & Регистрирует сцену для ее загрузки по имени. scene - сцена, которую нужно зарегистрировать \\ \hline
+	PushScene(BaseScene scene) & Помещает сцену во внутренний стек. Нужен для хранения истории сцен. scene - сцена, которую нужно поместить. \\ \hline
+	PopScene() & Загружает сцену, находящуюся на вершине стека сцен, которые были туда помещены методом PushScene(BaseScene scene).
+\end{xltabular}
+
+В таблице \ref{table11:table} представлены свойства класса SceneManager.
+
+\begin{xltabular}{\textwidth}{|>{\raggedright\arraybackslash}p{6cm}|>{\raggedright\arraybackslash}X|}
+	\caption{Свойства класса SceneManager\label{table11:table}}\\ \hline
+	~ \centrow Имя & \centrow Описание \\ \hline
+	\endfirsthead
+	\continuecaption{Продолжение таблицы \ref{table11:table}}
+	~ \centrow Имя & \centrow Описание \\ \hline 
+	\finishhead
+	CurrentSceneName & Имя активной сцены. \\ \hline
+	CurrentScene & Загруженная сцена. \\ \hline
+	Application & Ссылка на экземпляр класса GameApplication, привязанный к этому менеджеру сцен. \\ \hline
+	ScenePaused & Позволяет поставить на паузу сцену. \\ \hline
+\end{xltabular}
+
+В таблице \ref{table12:table} представлены события класса SceneManager.
+
+\begin{xltabular}{\textwidth}{|>{\raggedright\arraybackslash}p{6cm}|>{\raggedright\arraybackslash}X|}
+	\caption{События класса SceneManager\label{table12:table}}\\ \hline
+	~ \centrow Имя & \centrow Описание \\ \hline
+	\endfirsthead
+	\continuecaption{Продолжение таблицы \ref{table12:table}}
+	~ \centrow Имя & \centrow Описание \\ \hline 
+	\finishhead
+	SceneChanged & Вызывается при смене сцены. \\ \hline
+	SceneLoaded & Вызывается при загрузке сцены. \\ \hline
+	SceneUnloaded & Вызывается при выгрузке сцены.
+\end{xltabular}
+
+\paragraph{Класс GameApplication}
+
+Данный класс используется для запуска приложения, получения некоторых параметров запуска и управления приложением. В таблице \ref{table13:table} представлены методы класса GameApplication.
+
+\begin{xltabular}{\textwidth}{|>{\raggedright\arraybackslash}p{6cm}|>{\raggedright\arraybackslash}X|}
+	\caption{Методы класса GameApplication\label{table13:table}}\\ \hline
+	~ \centrow Имя & \centrow Описание \\ \hline
+	\endfirsthead
+	\continuecaption{Продолжение таблицы \ref{table13:table}}
+	~ \centrow Имя & \centrow Описание \\ \hline 
+	\finishhead
+	UnloadScene() & Прокси метод SceneManager. \\ \hline
+	SetBackgroundColor(Color color) & Устанавливает цвет заднего плана сцен. color - целевой цвет. \\ \hline
+	SetVSync(bool enabled) & Включает или выключает вертикальную синхронизацию. \\ \hline
+	LoadScene(BaseScene scene) & Прокси метод SceneManager.
+\end{xltabular}
+
+В таблице \ref{table14:table} представлены свойства класса GameApplication.
+
+\begin{xltabular}{\textwidth}{|>{\raggedright\arraybackslash}p{6cm}|>{\raggedright\arraybackslash}X|}
+	\caption{Свойства класса GameApplication\label{table14:table}}\\ \hline
+	~ \centrow Имя & \centrow Описание \\ \hline
+	\endfirsthead
+	\continuecaption{Продолжение таблицы \ref{table14:table}}
+	~ \centrow Имя & \centrow Описание \\ \hline 
+	\finishhead
+	WindowAspectRatio & Соотношение сторон экрана запущенного приложения - ширина/высота. \\ \hline
+	isSceneLoaded & Показывает, загружена ли сцена. \\ \hline
+	SceneManager & Ссылка на экземпляр SceneManager, принадлежащий текущему экземпляру. \\ \hline
+	FPS & Показывает FPS запущенной игры. \\ \hline
+	EditMode & Показывает в каком режиме запущена игра - режим с запущенным визуальным редактором или без него. \\ \hline
+	ClearBackground & Устанавливает, нужно ли перерисовывать задний план в запущенной игре. \\ \hline
+	Settings & Устанавливает, какие настройки материала должны попадать в шейдер. \\ \hline
+	ShadingModel & Управляет моделью освещения игры. \\ \hline
+	GlobalSettings & Позволяет управлять некоторыми глобальными настройками отрисовки игровых объектов.
+\end{xltabular}
+
+В таблице \ref{table15:table} представлены события класса GameApplication.
+
+\begin{xltabular}{\textwidth}{|>{\raggedright\arraybackslash}p{6cm}|>{\raggedright\arraybackslash}X|}
+	\caption{События класса GameApplication\label{table15:table}}\\ \hline
+	~ \centrow Имя & \centrow Описание \\ \hline
+	\endfirsthead
+	\continuecaption{Продолжение таблицы \ref{table15:table}}
+	~ \centrow Имя & \centrow Описание \\ \hline 
+	\finishhead
+	ChangedAspectRatio & Вызывается при изменении размеров окна.
+\end{xltabular}
+
+В таблице \ref{table16:table} представлены конструкторы класса GameApplication.
+
+\begin{xltabular}{\textwidth}{|>{\raggedright\arraybackslash}p{6cm}|>{\raggedright\arraybackslash}X|}
+	\caption{Конструкторы класса GameApplication\label{table16:table}}\\ \hline
+	~ \centrow Имя & \centrow Описание \\ \hline
+	\endfirsthead
+	\continuecaption{Продолжение таблицы \ref{table16:table}}
+	~ \centrow Имя & \centrow Описание \\ \hline 
+	\finishhead
+	GameApplication(string title, bool editMode, float tickTime) & title - название окна, editMode - нужен ли режим редактирования сцены, tickTime - частота обновления цикла физики.
+\end{xltabular}
+
+\paragraph{Класс BaseScene}
+
+Данный класс является базовым для пользовательских сцен. В таблице \ref{table17:table} представлены методы класса BaseScene.
+
+\begin{xltabular}{\textwidth}{|>{\raggedright\arraybackslash}p{6cm}|>{\raggedright\arraybackslash}X|}
+	\caption{Методы (хуки) класса BaseScene\label{table17:table}}\\ \hline
+	~ \centrow Имя & \centrow Описание \\ \hline
+	\endfirsthead
+	\continuecaption{Продолжение таблицы \ref{table17:table}}
+	~ \centrow Имя & \centrow Описание \\ \hline 
+	\finishhead
+	OnStart() & Вызывается при запуске сцены. \\ \hline
+	Update(float deltaTime) & Вызывается каждый кадр игры. deltaTime - время с последнего вызова. \\ \hline
+	FixedUpdate(float fixedDeltaTime) & Вызывается фиксированное в секунду количество раз. deltaTime - время с последнего вызова. \\ \hline
+	OnExit() & Вызывается при выгрузке сцены. \\ \hline
+	OnPause() & Вызывается, когда сцена ставится на паузу. \\ \hline
+	OnResume() & Вызывается, когда сцена снимается с паузы. \\ \hline
+	OnKeyDown
+	(KeyboardKeyEventArgs e) & Вызывается, когда в запущенной игре клавиша опускается вниз. e - информация о клавише. \\ \hline
+	OnKeyUp
+	(KeyboardKeyEventArgs e) & Вызывается, когда в запущенной игре нажатая клавиша поднимается. e - информация о клавише. \\ \hline
+	OnMouseDown
+	(MouseButtonEventArgs e) & Вызывается, когда в запущенной игре опускается кнопка мыши. e - информация о кнопке. \\ \hline
+	OnMouseUp
+	(MouseButtonEventArgs e) & Вызывается, когда в запущенной игре поднимается кнопка мыши. e - информация о кнопке. \\ \hline
+	OnMouseWheel
+	(MouseWheelEventArgs e) & Вызывается, когда в запущенной игре пользователь крутит колесико мыши. e - информация о событии. \\ \hline
+	OnMouseMove
+	(MouseMoveEventArgs e) & Вызывается, когда в запущенной игре пользователь двигает мышью. e - информация о событии.
+\end{xltabular}
+
+В таблице \ref{table18:table} представлены свойства класса BaseScene.
+
+\begin{xltabular}{\textwidth}{|>{\raggedright\arraybackslash}p{6cm}|>{\raggedright\arraybackslash}X|}
+	\caption{Свойства класса BaseScene\label{table18:table}}\\ \hline
+	~ \centrow Имя & \centrow Описание \\ \hline
+	\endfirsthead
+	\continuecaption{Продолжение таблицы \ref{table18:table}}
+	~ \centrow Имя & \centrow Описание \\ \hline 
+	\finishhead
+	GameObjectManager & Ссылка на экземпляр менеджера объектов. \\ \hline
+	CameraManager & Ссылка на экземпляр менеджера камер. \\ \hline
+	LightManager & Ссылка на экземпляр менеджера света. \\ \hline
+	SceneManager & Ссылка на экземпляр менеджера сцен.
+\end{xltabular}
+
+\paragraph{Класс GLBImporter}
+
+Данный класс нужен для импорта .glb моделей. В таблице \ref{table19:table} представлены методы класса GLBImporter.
+
+\begin{xltabular}{\textwidth}{|>{\raggedright\arraybackslash}p{6cm}|>{\raggedright\arraybackslash}X|}
+	\caption{Методы класса GLBImporter\label{table19:table}}\\ \hline
+	~ \centrow Имя & \centrow Описание \\ \hline
+	\endfirsthead
+	\continuecaption{Продолжение таблицы \ref{table19:table}}
+	~ \centrow Имя & \centrow Описание \\ \hline 
+	\finishhead
+	LoadModel(string path, RenderSettings settings = RenderSettings.All) & Загружает модель в игру. path - путь к файлу. settings - свойства материала, которые нужно импортировать. Возврат - GLBScene[]?, набор glb-сцен файла.
+\end{xltabular}
+
+\paragraph{Класс STLImporter}
+
+Данный класс нужен для импорта .stl моделей. В таблице \ref{table20:table} представлены методы класса STLImporter.
+
+\begin{xltabular}{\textwidth}{|>{\raggedright\arraybackslash}p{6cm}|>{\raggedright\arraybackslash}X|}
+	\caption{Методы класса STLImporter\label{table20:table}}\\ \hline
+	~ \centrow Имя & \centrow Описание \\ \hline
+	\endfirsthead
+	\continuecaption{Продолжение таблицы \ref{table20:table}}
+	~ \centrow Имя & \centrow Описание \\ \hline 
+	\finishhead
+	LoadModel(string path, RenderSettings settings = RenderSettings.All) & Загружает модель в игру. path - путь к файлу. settings - флаг, означающий, нужно ли импортировать цвета полигонов. Возврат - STLModel?, загруженная модель.
+\end{xltabular}
+
+\subsubsection{Пример использования движка}
+
+Для подтверждения работоспособности разработанного игрового движка и наглядной демонстрации его основных возможностей было создано демонстрационное приложение, представляющее собой простую 3D игру. Игровой процесс заключается во взаимодействии пользователя с объектами на сцене: при нажатии левой кнопки мыши выполняется выбор объекта, на который указывает курсор, после чего этот объект удаляется из сцены и мгновенно возрождается в новой случайной позиции в пределах игрового пространства. Такая механика позволяет циклически тестировать работу подсистем управления игровыми объектами и обработки пользовательского ввода в динамически изменяющейся сцене.
+
+Демонстрационное приложение использует следующие возможности разработанного движка. Подсистема обработки ввода обеспечивает получение координат курсора в момент клика и определение выбранного объекта в 3D пространстве. Система управления игровыми объектами отвечает за удаление и создание объектов в реальном времени с корректным освобождением ресурсов OpenGL. Система трансформации позволяет задавать объектам случайные позиции при возрождении. Сцена содержит источник освещения, демонстрируя работу системы света движка.
+
+Класс сцены игры.
+\begin{lstlisting}
+public class ExampleScene : BaseScene
+{
+	private readonly Random _r = new();
+	
+	[AllowNull]
+	private GLBModel _model;
+	
+	[AllowNull]
+	private Camera _cam;
+	
+	protected override void OnStart()
+	{
+		base.OnStart();
+		
+		_model = GLBImporter.LoadModel(@"C:\Users\it_ge\Desktop\Models\rick.glb")![0].Models[1];
+		
+		for (int i = 0; i < 10; i++)
+		{
+			SpawnObject();
+		}
+		
+		_cam = new Camera(CameraTypes.Perspective, Vector3.Zero, SceneManager!.Application!.WindowAspectRatio) 
+		{
+			Far = 500.0f,
+			Near = 10.0f
+		};
+		
+		CameraManager.AddCamera(_cam);
+		
+		DirectionalLight light = new()
+		{
+			Color = Color.White,
+			Intensity = 1.0f,
+			Yaw = -60.0f,
+			Pitch = -30.0f,
+		};
+		
+		LightManager.AddDirectionalLight(light);
+	}
+	
+    protected override void OnMouseDown(MouseButtonEventArgs e)
+	{
+		base.OnMouseDown(e);
+		
+		if (e.Button == MouseButton.Left)
+		{
+			GameApplication app = SceneManager!.Application!;
+			MouseState state = app.MouseState;
+			DrawableObject? pickedObj = GameObjectManager.PickObject(state.X, state.Y, app.ClientSize.X, app.ClientSize.Y, _cam);
+			
+			if (pickedObj is not null)
+			{
+				GameObjectManager.RemoveGameObject(pickedObj);
+				SpawnObject();
+			}
+		}
+	}
+	
+	private void SpawnObject()
+	{
+		GLBGameObject newObject = new(_model);
+		newObject.Transform.Position = new Vector3(_r.Next(-30, 30), _r.Next(-20, 20), _r.Next(-100, -10));
+		newObject.Transform.Rotation = new Vector3(0.0f, 0.0f, 90.0f);
+		newObject.Transform.Scale = new Vector3(5.0f);
+		GameObjectManager.AddGameObject(newObject);
+	}
+}
+
+\end{lstlisting}
+
+Главный класс программы.
+\begin{lstlisting}
+internal class Program
+{
+	[STAThread]
+	public static void Main()
+	{
+		GameApplication app = new("ExampleApp", editMode: false);
+		
+		app.LoadScene(new ExampleScene());
+		app.Run();
+	}
+}
+\end{lstlisting}
+
+\begin{lstlisting}
+	[AllowNull]
+	private GLBModel _model;
+	
+	[AllowNull]
+	private Camera _cam;
+	
+	[AllowNull]
+	private FreeCameraController _camController;
+\end{lstlisting}
+
+Сначала в коде игры объявляются поля, необходимые для ее работы.  \_model - это загруженная модель игрового объекта, \_cam - камера сцены.
+
+\begin{lstlisting}
+_model = GLBImporter.LoadModel(@"C:\Users\it_ge\Desktop\Models\rick.glb")![0].Models[1];
+\end{lstlisting}
+
+В начале метода OnStart() модель загружается в игру с помощью импортера. Метод возвращает набор GLB сцен. Так как в файле всего одна сцена и модель, используются операторы [0].Models[1] для ее получения.
+
+\begin{lstlisting}
+private void SpawnObject()
+{
+	GLBGameObject newObject = new(_model);
+	newObject.Transform.Position = new Vector3(_r.Next(-30, 30), _r.Next(-20, 20), _r.Next(-100, -10));
+	newObject.Transform.Rotation = new Vector3(0.0f, 0.0f, 90.0f);
+	newObject.Transform.Scale = new Vector3(5.0f);
+	GameObjectManager.AddGameObject(newObject);
+}
+\end{lstlisting}
+
+Далее в цикле вызывается метод SpawnObject, который генерирует изначальные объекты сцены. Объектам задаются свойства Transform.Position, Transform.Rotation и Transform.Scale, которые задают положение объекта, поворот и масштаб. Далее созданный объект помещается в сцену командой GameObjectManager.AddGameObject(newObject);.
+
+\begin{lstlisting}
+_cam = new Camera(CameraTypes.Perspective, Vector3.Zero, SceneManager!.Application!.WindowAspectRatio) 
+{
+	Far = 500.0f,
+	Near = 10.0f
+};
+
+CameraManager.AddCamera(_cam);
+\end{lstlisting}
+
+Далее в коде создается и добавляется в сцену камера. Аргумент CameraTypes.Perspective задает тип камеры - камера с перспективной проекцией. Vector3.Zero - это положение камеры в мировых координатах, а 3 аргумент задает соотношение сторон экрана. Far и Near задают дальнюю и ближнюю границы камеры соответственно.
+
+Команда CameraManager.AddCamera(\_cam); добавляет камеру в сцену.
+
+\begin{lstlisting}
+DirectionalLight light = new()
+{
+	Color = Color.White,
+	Intensity = 1.0f,
+	Yaw = -60.0f,
+	Pitch = -30.0f,
+};
+
+LightManager.AddDirectionalLight(light);
+\end{lstlisting}
+
+В данном фрагменте кода создается и добавляется в сцену направленный источник света. Color - цвет света, Intensity - его интенсивность, Yaw и Pitch - углы Эйлера направления света.
+
+Команда LightManager.AddDirectionalLight(light); Добавляет источник света в сцену.
+
+\begin{lstlisting}
+protected override void OnMouseDown(MouseButtonEventArgs e)
+{
+	base.OnMouseDown(e);
+	
+	if (e.Button == MouseButton.Left)
+	{
+		GameApplication app = SceneManager!.Application!;
+		MouseState state = app.MouseState;
+		DrawableObject? pickedObj = GameObjectManager.PickObject(state.X, state.Y, app.ClientSize.X, app.ClientSize.Y, _cam);
+		
+		if (pickedObj is not null)
+		{
+			GameObjectManager.RemoveGameObject(pickedObj);
+			SpawnObject();
+		}
+	}
+}
+\end{lstlisting}
+
+Данный метод является хуком, который срабатывает при нажатии на кнопку мыши
+
+\begin{lstlisting}
+GameApplication app = SceneManager!.Application!;
+MouseState state = app.MouseState;
+\end{lstlisting}
+
+Данные команды получают экземпляр класса GameApplication игры и получают из нее состояние мыши.
+
+\begin{lstlisting}
+DrawableObject? pickedObj = GameObjectManager.PickObject(state.X, state.Y, app.ClientSize.X, app.ClientSize.Y, _cam);
+\end{lstlisting}
+
+Эта команда с помощью ray casting определяет, попал ли объект под курсор мыши при нажатии на левую кнопку и в случае попадания получает этот объект.
+
+\begin{lstlisting}
+if (pickedObj is not null)
+{
+	GameObjectManager.RemoveGameObject(pickedObj);
+	SpawnObject();
+}
+\end{lstlisting}
+
+В конце этого метода производится проверка, попал ли курсор на объект. И если попал, то объект удаляется из сцены и пересоздается.
+
+\begin{lstlisting}
+GameApplication app = new("ExampleApp", editMode: false);
+\end{lstlisting}
+
+В главном классе игры, в методе Main эта команда создает экземпляр приложения. В него передаются имя окна и bool-значение, означающее, нужно ли запускать визуальный редактор.
+
+\begin{lstlisting}
+app.LoadScene(new ExampleScene());
+app.Run();
+\end{lstlisting}
+
+Далее в игру загружается сцена и окно запускается. Еще важно отметить, что у метода Main должен быть атрибут [STAThread] для правильной работы редактора.
+
+\subsection{Визуальный редактор}
+\subsubsection{Требования к интерфейсу визуального редактора}
+Интерфейс редактора сцен должен представлять собой несколько окон, наложенных поверх игры с единым стилем оформления, обеспечивающее понятное управление над объектами сцены и их компонентами.
+
+Компоненты интерфейса редактора состоят из:
+
+\begin{itemize}
+	\item главное окно редактора для просмотра объектов сцены и загрузки моделей;
+	
+	\item окно инспектора объектов, позволяющее управлять их состоянием;
+	
+	\item кнопку загрузки моделей из файлов;
+	
+	\item текстовые поля для управления настройками камеры редактора;
+	
+	\item список игровых объектов сцены хранящий их превью;
+	
+	\item кнопку "удалить объект" для удаления объекта из сцены;
+	
+	\item кнопку "назад" для выхода из окна инспектора;
+	
+	\item чекбокс для задания видимости объекта;
+	
+	\item текстовые поля для задания объекту свойств положения, поворота и масштаба
+	
+	\item текстовое поле для задания объекту тэга.
+\end{itemize}
+
+Интерфейс должен отображаться при запуске игры с флагом режима редактирования. В данном режиме должны быть доступны функции импорта трёхмерных моделей, настройки параметров камеры редактора, управления списком игровых объектов и редактирования их компонентов через инспектор. В режиме игры данный интерфейс должен отсутствовать, поэтому в данном случае освещение и камеры должны создаваться из кода сцены.
+
+Особое внимание должно быть уделено удобству работы со списком превью загруженных объектов, с инспектором объекта, содержащим поля для трансляции, поворота и масштабирования, а также с параметрами настройки камеры редактора, включающими чувствительность, скорость перемещения, ближнюю и дальнюю дистанции отсечения. Интерфейс должен быть адаптирован для последовательного выполнения действий по импорту модели, её размещению в сцене, настройке трансформации и тегированию объекта без лишних переходов между несвязанными окнами.
+
+На рисунке \ref{fig:window1} представлен внешний вид главного меню редактора.
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.3\textwidth]{"images/Окно 1.jpg"}
+	\caption{Главное меню}
+	\label{fig:window1}
+\end{figure}
+
+Как показано на рисунке, главное меню содержит кнопку для загрузки моделей, настройки камеры редактора, а также список из картинок которые обозначают внешний вид игровых объектов в сцене.
+
+На рисунке \ref{fig:window2} представлен внешний вид инспектора объектов.
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.6\textwidth]{"images/Окно 2.jpg"}
+	\caption{Окно инспектора игровых объектов}
+	\label{fig:window2}
+\end{figure}
+
+Окно инспектора игровых объектов включает в себя элементы интерфейса для управления выбранным объектом. Сюда входят поля для ввода transform-свойств, а также другие настройки объекта.
+
+\subsubsection{Моделирование вариантов использования}
+На основании анализа предметной области в программе должны быть
+реализованы следующие прецеденты:
+
+\begin{itemize}
+	\item изменение границ камеры;
+	
+	\item изменение скорости движения камеры;
+	
+	\item изменение чувствительности камеры;
+	
+	\item загрузка модели объекта;
+	
+	\item просмотр объектов сцены;
+	
+	\item удаление объекта;
+	
+	\item задание видимости объекта;
+	
+	\item настройка свойств объекта;
+	
+	\item изменение тэга объекта.
+\end{itemize}
+
+Диаграмма прецедентов показана на рисунке \ref{fig:precedenti}
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=1.0\textwidth]{"images/Диаграмма прецедентов.png"}
+	\caption{Диаграмма прецедентов пользователя}
+	\label{fig:precedenti}
+\end{figure}
+
+\paragraph{Вариант использования «Изменение границ камеры»}
+\textbf{Заинтересованные лица и их требования:} пользователь желает изменить дальность рендеринга объектов.
+
+\textbf{Предусловие:} пользователь запустил приложение в режиме редактирования.
+
+\textbf{Постусловие:} граница камеры успешно изменена.
+
+\textbf{Основной успешный сценарий:}
+
+\begin{enumerate}
+	\item Пользователь загружает сцену в движок.
+	
+	\item Пользователь запускает окно с игрой.
+	
+	\item Пользователь вводит новое значение в поля для ввода.
+	
+	\item Система проверяет введенные данные.
+	
+	\item Система меняет свойство камеры.
+\end{enumerate}
+
+\textbf{Альтернативный сценарий (неверные данные):}
+\begin{enumerate}
+	\item Пользователь вводит отрицательное значение.
+	
+	\item Система проверяет значение.
+	
+	\item Свойство камеры остается предыдущим.
+\end{enumerate}
+
+\textbf{Альтернативный сценарий (пустое поле):}
+\begin{enumerate}
+	\item Пользователь стирает поле настройки камеры.
+	
+	\item Система оставляет предыдущее значение настройки.
+\end{enumerate}
+
+\paragraph{Вариант использования «Изменение скорости движения камеры»}
+\textbf{Заинтересованные лица и их требования:} пользователь желает изменить скорость перемещения по сцене.
+
+\textbf{Предусловие:} пользователь запустил приложение в режиме редактирования.
+
+\textbf{Постусловие:} скорость камеры успешно изменена.
+
+\textbf{Основной успешный сценарий:}
+
+\begin{enumerate}
+	\item Пользователь загружает сцену в движок.
+	
+	\item Пользователь запускает окно с игрой.
+	
+	\item Пользователь вводит новое значение в поля для ввода.
+	
+	\item Система проверяет введенные данные.
+	
+	\item Система меняет скорость движения камеры.
+\end{enumerate}
+
+\textbf{Альтернативный сценарий (неверные данные):}
+\begin{enumerate}
+	\item Пользователь вводит отрицательное значение.
+	
+	\item Система проверяет значение
+	
+	\item Скорость камеры остается предыдущей.
+\end{enumerate}
+
+\textbf{Альтернативный сценарий (пустое поле):}
+\begin{enumerate}
+	\item Пользователь стирает поле настройки камеры.
+	
+	\item Система оставляет предыдущее значение настройки.
+\end{enumerate}
+
+\paragraph{Вариант использования «Изменение чувствительности камеры»}
+\textbf{Заинтересованные лица и их требования:} пользователь желает изменить чувствительность управления камерой.
+
+\textbf{Предусловие:} пользователь запустил приложение в режиме редактирования.
+
+\textbf{Постусловие:} чувствительность камеры успешно изменена.
+
+\textbf{Основной успешный сценарий:}
+
+\begin{enumerate}
+	\item Пользователь загружает сцену в движок.
+	
+	\item Пользователь запускает окно с игрой.
+	
+	\item Пользователь вводит новое значение в поля для ввода.
+	
+	\item Система проверяет введенные данные.
+	
+	\item Система меняет чувствительность камеры.
+\end{enumerate}
+
+\textbf{Альтернативный сценарий (неверные данные):}
+\begin{enumerate}
+	\item Пользователь вводит отрицательное значение.
+	
+	\item Система проверяет значение
+	
+	\item Чувствительность камеры остается предыдущей.
+\end{enumerate}
+
+\textbf{Альтернативный сценарий (пустое поле):}
+\begin{enumerate}
+	\item Пользователь стирает поле настройки камеры.
+	
+	\item Система оставляет предыдущее значение настройки.
+\end{enumerate}
+
+\paragraph{Вариант использования «Загрузка модели объекта»}
+\textbf{Заинтересованные лица и их требования:} пользователь желает загрузить в сцену игровой объект.
+
+\textbf{Предусловие:} пользователь запустил приложение в режиме редактирования.
+
+\textbf{Постусловие:} игровой объект загружен.
+
+\textbf{Основной успешный сценарий:}
+
+\begin{enumerate}
+	\item Пользователь загружает сцену в движок.
+	
+	\item Пользователь запускает окно с игрой.
+	
+	\item Пользователь нажимает кнопку «Загрузить модель».
+	
+	\item Пользователь выбирает нужный файл в проводнике.
+	
+	\item Система загружает модель и на ее основе создает объект.
+\end{enumerate}
+
+\paragraph{Вариант использования «Просмотр объектов сцены»}
+\textbf{Заинтересованные лица и их требования:} пользователь желает загрузить в сцену игровой объект.
+
+\textbf{Предусловие:} пользователь запустил приложение в режиме редактирования.
+
+\textbf{Постусловие:} пользователю отображаются загруженные объекты.
+
+\textbf{Основной успешный сценарий:}
+
+\begin{enumerate}
+	\item Пользователь загружает сцену в движок.
+	
+	\item Пользователь запускает окно с игрой.
+	
+	\item Пользователь видит объекты в главном окне.
+\end{enumerate}
+
+\paragraph{Вариант использования «Удаление объекта»}
+\textbf{Заинтересованные лица и их требования:} пользователь желает удалить игровой объект из сцены.
+
+\textbf{Предусловие:} пользователь запустил приложение в режиме редактирования.
+
+\textbf{Постусловие:} игровой объект удален из сцены.
+
+\textbf{Основной успешный сценарий:}
+
+\begin{enumerate}
+	\item Пользователь загружает сцену в движок.
+	
+	\item Пользователь запускает окно с игрой.
+	
+	\item Пользователь нажимает на нужный объект в главном окне.
+	
+	\item Система открывает окно инспектора объекта.
+	
+	\item Пользователь нажимает на кнопку «Удалить объект».
+	
+	\item Система удаляет объект из сцены.
+\end{enumerate}
+
+\paragraph{Вариант использования «Задание видимости объекта»}
+\textbf{Заинтересованные лица и их требования:} пользователь хочет задать видимость игрового объекта в сцене.
+
+\textbf{Предусловие:} пользователь запустил приложение в режиме редактирования.
+
+\textbf{Постусловие:} игровой объект скрыт или показан.
+
+\textbf{Основной успешный сценарий:}
+
+\begin{enumerate}
+	\item Пользователь загружает сцену в движок.
+	
+	\item Пользователь запускает окно с игрой.
+	
+	\item Пользователь нажимает на нужный объект в главном окне.
+	
+	\item Система открывает окно инспектора объекта.
+	
+	\item Пользователь нажимает на чекбокс «Отображать объект».
+	
+	\item Система задает видимость объекту.
+\end{enumerate}
+
+\paragraph{Вариант использования «Настройка свойств объекта»}
+\textbf{Заинтересованные лица и их требования:} пользователь хочет задать видимость игрового объекта в сцене.
+
+\textbf{Предусловие:} пользователь запустил приложение в режиме редактирования.
+
+\textbf{Постусловие:} игровой объект изменяет свои свойства.
+
+\textbf{Основной успешный сценарий:}
+
+\begin{enumerate}
+	\item Пользователь загружает сцену в движок.
+	
+	\item Пользователь запускает окно с игрой.
+	
+	\item Пользователь нажимает на нужный объект в главном окне.
+	
+	\item Система открывает окно инспектора объекта.
+	
+	\item Пользователь вводит значения в поля свойств объекта».
+	
+	\item Система задает объекту новые свойства.
+\end{enumerate}
+
+\textbf{Альтернативный сценарий (пустые поля):}
+\begin{enumerate}
+	\item Пользователь стирает поля свойств объекта.
+	
+	\item Система оставляет предыдущее значение свойств.
+\end{enumerate}
+
+\paragraph{Вариант использования «Изменение тэга объекта»}
+\textbf{Заинтересованные лица и их требования:} пользователь хочет изменить тэг объекта в сцене.
+
+\textbf{Предусловие:} пользователь запустил приложение в режиме редактирования.
+
+\textbf{Постусловие:} игровой объект получает новый тэг.
+
+\textbf{Основной успешный сценарий:}
+
+\begin{enumerate}
+	\item Пользователь загружает сцену в движок.
+	
+	\item Пользователь запускает окно с игрой.
+	
+	\item Пользователь нажимает на нужный объект в главном окне.
+	
+	\item Система открывает окно инспектора объекта.
+	
+	\item Пользователь вводит значения в поле «Тэг».
+	
+	\item Система задает объекту новый тэг.
+\end{enumerate}
+
+\subsection{Требования к надежности}
+Система должна обеспечивать надежную работу при различных режимах функционирования, включая редактирование сцены и игровой режим.
+
+При возникновении ошибок в процессе выполнения операций импорта моделей, загрузки сцены и рендеринга система должна выводить диагностическое сообщение в консоль, содержащее информацию о типе ошибки и месте её возникновения. Критические ошибки, приводящие к невозможности дальнейшей работы, должны корректно завершать приложение с сохранением целостности файлов сцены и других пользовательских данных. В случае некорректного ввода параметров в поля инспектора объекта (нечисловые значения, пустые поля, выход за допустимые пределы) система должна игнорировать некорректные изменения и сохранять предыдущие корректные значения.
+
+На уровне приложения должна быть реализована валидация вводимых пользователем данных. Проверке подлежат числовые значения в полях трансляции, поворота и масштаба объекта (проверка на соответствие числовому формату), параметры камеры редактора (чувствительность, скорость, ближняя и дальняя дистанции должны находиться в допустимых пределах), а также тег объекта (проверка на недопустимые символы и максимальную длину). Это позволяет предотвратить некорректные изменения параметров сцены и возможные ошибки рендеринга.
+
+Система должна обеспечивать устойчивость к ошибочным действиям пользователя, связанным с попыткой импорта неподдерживаемого формата файла, импортом повреждённой модели, вводом некорректных числовых значений в поля трансформации, а также попыткой сохранения сцены при отсутствии изменений. Во всех подобных случаях система должна выводить соответствующее сообщение в консоль и корректно завершать свою работу.
+
+При возникновении ошибок и исключительных ситуаций система должна обеспечивать вывод диагностических сообщений в консоль. Сообщения должны содержать информацию о типе ошибки. При запуске приложения из командной строки или среды разработки все сообщения выводятся в стандартный поток вывода для последующего анализа. Для критических ошибок OpenGL, связанных с потерей контекста или несовместимостью версий, система должна выводить развёрнутое описание проблемы.
+
+Система должна обеспечивать корректное управление как управляемой памятью .NET, так и неуправляемыми ресурсами OpenGL (буферы вершин, текстурные объекты, шейдерные программы). При удалении игрового объекта из сцены соответствующие неуправляемые ресурсы должны немедленно освобождаться через вызов соответствующих функций OpenGL. При завершении приложения все неуправляемые ресурсы должны быть освобождены во избежание утечек памяти. Система должна минимизировать количество аллокаций в управляемой куче во время основного цикла рендеринга для предотвращения вызовов сборщика мусора, которые могут привести к заметным фризам.
+
+\subsection{Требования к программной и аппаратной совместимости}
+Система должна функционировать как десктопное приложение под управлением операционной системы Windows и предъявлять умеренные требования к аппаратному обеспечению, характерные для современных персональных компьютеров.
+
+\subsection{Операционная система}
+Разрабатываемый игровой движок и редактор сцен могут функционировать под управлением операционной системы Windows (версии 10 и выше). Для корректной работы графической подсистемы требуется наличие установленных драйверов видеокарты с поддержкой OpenGL версии 4.6.
+
+\subsection{Аппаратные требования}
+Для работы разрабатываемого игрового движка и редактора сцен требуется персональный компьютер, обеспечивающий:
+\begin{itemize}
+	\item процессор с тактовой частотой не ниже 2,5 ГГц (архитектура x86 или x64);
+	\item оперативную память объёмом не менее 8 ГБ (рекомендуется 16 ГБ для работы со сложными трёхмерными сценами);
+	\item видеокарту с поддержкой OpenGL 4.6 и объёмом видеопамяти не менее 2 ГБ (рекомендуется 4 ГБ и выше);
+	\item наличие свободного дискового пространства не менее 500 МБ для размещения исполняемых файлов движка, библиотек и пользовательских ресурсов (модели, текстуры, сцены);
+	\item устройство ввода: клавиатура и мышь.
+\end{itemize}
+
+\subsection{Программное обеспечение}
+Для работы разработанного игрового движка и редактора сцен не требуется установка дополнительного программного обеспечения или сторонних библиотек. Все необходимые компоненты поставляются вместе с приложением. На целевой машине должна быть установлена среда выполнения .NET 6.0 или выше.
+
+Для конечного пользователя (разработчика игр) для работы с движком и редактором сцен достаточно запустить исполняемый файл приложения. Все зависимости уже включены в дистрибутив и не требуют отдельной установки или настройки.
+
+\subsection{Требования к графическому API}
+Движок предъявляет следующие требования к графической подсистеме компьютера:
+\begin{itemize}
+	\item поддержка OpenGL версии не ниже 4.6 (core profile);
+	\item поддержка шейдеров версии 430 и выше;
+	\item объём видеопамяти, достаточный для хранения загруженных текстур и буферов вершин текущей сцены.
+\end{itemize}
+
+\subsection{Требования к производительности}
+Система должна обеспечивать:
+\begin{itemize}
+	\item частоту кадров не менее 60 FPS при отрисовке сцены, содержащей до 500 простых трёхмерных объектов (кубы, сферы) с базовыми материалами;
+	
+	\item время загрузки GLB-модели объёмом до 50 МБ не более 2 секунд;
+	
+	\item время переключения между простыми сценами не более 1 секунды;
+	
+	\item потребление оперативной памяти не более 4 ГБ при работе со сценой среднего размера (500 объектов);
+	
+	\item отсутствие заметных фризов, вызванных сборкой мусора, при длительной работе редактора.
+\end{itemize}
+
+\subsection{Требования к безопасности}
+Система должна обеспечивать:
+\begin{itemize}
+	\item проверку импортируемых файлов моделей на наличие потенциально опасных данных (неправильные размеры чанков, неправильный формат .stl модели);
+	\item ограничение максимального размера импортируемого файла модели для предотвращения исчерпания ресурсов системы;
+	\item обработку исключительных ситуаций без доступа к системным ресурсам, выходящим за пределы приложения;
+	\item отсутствие необходимости в правах администратора для запуска и работы приложения.
+\end{itemize}
+
+\subsection{Требования к размещению и сопровождению}
+Система должна поставляться в виде набора исполняемых файлов, библиотек и ресурсов, пригодных для запуска на целевом компьютере без выполнения процедуры установки. Для сопровождения системы должны быть доступны исходные файлы проекта на языке C\#, файлы ресурсов (модели, текстуры, шейдеры), а также документация по сборке и модификации проекта.
+
+\subsection{Требования к оформлению документации}
+Разработка программной документации и программного изделия должна производиться согласно ГОСТ 19.102–77 и ГОСТ 34.601–90. Единая система программной документации.

@@ -1,0 +1,654 @@
+\section{Рабочий проект}
+Настоящий раздел содержит описание архитектуры разработанного программного комплекса на уровне классов и модулей. Для каждого класса определено его функциональное назначение, приведены основные методы и свойства, не определенные на этапе проектирования API.
+
+\subsection{Описание сущностей программной системы}
+\subsubsection{Класс Camera}
+Класс Camera отвечает за управление камерой в трёхмерной сцене. Он хранит положение камеры в мировом пространстве, углы рыскания и тангажа для управления направлением обзора, а также параметры проекции (ближнюю и дальнюю плоскости отсечения, угол обзора для перспективной проекции или границы видимой области для ортографической проекции). В таблице \ref{camera1:table} представлены методы данного класса.
+
+\begin{xltabular}{\textwidth}{|>{\raggedright\arraybackslash}p{3.5cm}|>
+	{\raggedright\arraybackslash}p{3.5cm}|>
+	{\raggedright\arraybackslash}X|}
+	\caption{Методы класса Camera\label{camera1:table}}\\ \hline
+	\centrow Имя & \centrow Параметры & \centrow Описание \\ \hline
+	\endfirsthead
+	\continuecaption{Продолжение таблицы \ref{camera1:table}}
+	\centrow Имя & \centrow Параметры & \centrow Описание \\ \hline 
+	\finishhead
+	GetPickRay & mouseX, mouseY, screenWidth, screenHeight & Возвращает вектор луча, выпущенного из камеры. \\ \hline
+	CalculateVectors & Нет & Пересчитывает вектор направления взгляда, правый и верхний векторы. \\ \hline
+	Cleanup & Нет & Очищает память от матрицы вида и матрицы проекции.
+\end{xltabular}
+
+Свойства данного класса показаны в таблице \ref{camera2:table}.
+
+\begin{xltabular}{\textwidth}{|>{\raggedright\arraybackslash}p{6cm}|>{\raggedright\arraybackslash}X|}
+	\caption{Свойства класса Camera\label{camera2:table}}\\ \hline
+	~ \centrow Имя & \centrow Описание \\ \hline
+	\endfirsthead
+	\continuecaption{Продолжение таблицы \ref{camera2:table}}
+	~ \centrow Имя & \centrow Описание \\ \hline 
+	\finishhead
+	Tag & Тэг камеры. Нужен для идентификации камеры в сцене. \\ \hline
+	Near & Ближняя граница камеры с перспективной проекцией. \\ \hline
+	Far & Дальняя граница камеры с перспективной проекцией. \\ \hline
+	Position & Позиция камеры в мировых координатах. \\ \hline
+	Up & Вектор, который указывает вверх относительно направления взгляда. \\ \hline
+	RightVector & Вектор, который указывает вправо относительно направления взгляда. \\ \hline
+	Front & Вектор направления взгляда. \\ \hline
+	RightSide & Правая граница бокса камеры с ортографической проекцией. \\ \hline
+	LeftSide & Левая граница бокса камеры с ортографической проекцией. \\ \hline
+	BottomSide & Нижняя граница бокса камеры с ортографической проекцией. \\ \hline
+	TopSide & Верхняя граница бокса камеры с ортографической проекцией. \\ \hline
+	AspectRatio & Соотношение сторон экрана, к которому привязана камера. \\ \hline
+	Fov & Поле зрения камеры. \\ \hline
+	Yaw & Угол рысканья камеры. \\ \hline
+	Pitch & Угол тангажа камеры. \\ \hline
+	OrthographicBorders & Позволяет задать границы ортографической камеры одним размером. \\ \hline
+	ProjectionMatrix & Матрица проекции камеры. \\ \hline
+	ViewMatrix & Матрица вида камеры.
+\end{xltabular}
+
+\subsubsection{Класс FreeCameraController}
+Данный класс необходим для управления камерами, добавленными в сцену. Для того, чтоб это осуществить разработчик должен создать экземпляр этого класса, привязать камеру к контроллеру и использовать его методы в хуках сцены. В таблице \ref{FreeCameraController1:table} представлены методы данного класса.
+
+\begin{xltabular}{\textwidth}{|>{\raggedright\arraybackslash}p{3.5cm}|>
+		{\raggedright\arraybackslash}p{3.5cm}|>
+		{\raggedright\arraybackslash}X|}
+	\caption{Методы класса FreeCameraController\label{FreeCameraController1:table}}\\ \hline
+	\centrow Имя & \centrow Параметры & \centrow Описание \\ \hline
+	\endfirsthead
+	\continuecaption{Продолжение таблицы \ref{FreeCameraController1:table}}
+	\centrow Имя & \centrow Параметры & \centrow Описание \\ \hline 
+	\finishhead
+	BindCamera & cam & Привязывает камеру к текущему контроллеру путем установки этой камеры во внутреннее поле. \\ \hline
+	ResetFirstMove & Нет & Сбрасывает первое движение камеры. Необходим для устранения рывка при начале вращения камерой. \\ \hline
+	MoveCamera & inputKey, delta & Заставляет камеру двигаться в зависимости от нажатой клавиши. Принимает нажатую клавишу и дельту для обеспечения равномерной скорости перемещения вне зависимости от FPS. \\ \hline
+	RotateCamera & mousePos & Вращает камеру при движении мышью путем изменения ее углов тангажа и рысканья.
+\end{xltabular}
+
+Свойства данного класса показаны в таблице \ref{FreeCameraController2:table}.
+
+\begin{xltabular}{\textwidth}{|>{\raggedright\arraybackslash}p{6cm}|>{\raggedright\arraybackslash}X|}
+	\caption{Свойства класса FreeCameraController\label{FreeCameraController2:table}}\\ \hline
+	~ \centrow Имя & \centrow Описание \\ \hline
+	\endfirsthead
+	\continuecaption{Продолжение таблицы \ref{FreeCameraController2:table}}
+	~ \centrow Имя & \centrow Описание \\ \hline 
+	\finishhead
+	Speed & Скорость перемещения камеры в сцене. \\ \hline
+	Sensivity & Чувствительность вращения камеры мышью.
+\end{xltabular}
+
+\subsubsection{Структура Material}
+Данная структура нужна для хранения материала игровых объектов. Она содержит свойства различных видов текстур и факторов (шероховатость, базовый цвет и т. д.). Свойства данного класса показаны в таблице \ref{Materia1:table}.
+
+\begin{xltabular}{\textwidth}{|>{\raggedright\arraybackslash}p{6cm}|>{\raggedright\arraybackslash}X|}
+	\caption{Свойства класса FreeCameraController\label{Materia1:table}}\\ \hline
+	~ \centrow Имя & \centrow Описание \\ \hline
+	\endfirsthead
+	\continuecaption{Продолжение таблицы \ref{Materia1:table}}
+	~ \centrow Имя & \centrow Описание \\ \hline 
+	\finishhead
+	AlbedoMap & Карта альбедо. Отображает базовую текстуру модели \\ \hline
+	MetallicRoughnessMap & Текстура шероховатости/металличности \\ \hline
+	NormalMap & Карта нормалей. Нужна для более детализированного освещения. \\ \hline
+	OcclusionMap & Карта оклюзий. Нужна для затенения темных участков. \\ \hline
+	EmissiveMap & Карта эмиссии. Нужна для свечения некоторых участков модели. \\ \hline
+	BaseColorFactor & Базовый цвет модели. \\ \hline
+	MetallicFactor & Коэффициент металличности модели \\ \hline
+	RoughnessFactor & Коэффициент шероховатости модели \\ \hline
+	EmissiveFactor & Коэффициент светимости модели.
+\end{xltabular}
+
+\subsubsection{Класс Mesh}
+Данный класс представляет собой меш модели. Хранит матрицу, массив примитивов и методы для перестроения шейдеров. В таблице \ref{Mesh1:table} представлены методы данного класса.
+
+\begin{xltabular}{\textwidth}{|>{\raggedright\arraybackslash}p{3.5cm}|>
+		{\raggedright\arraybackslash}p{3.5cm}|>
+		{\raggedright\arraybackslash}X|}
+	\caption{Методы класса Mesh\label{Mesh1:table}}\\ \hline
+	\centrow Имя & \centrow Параметры & \centrow Описание \\ \hline
+	\endfirsthead
+	\continuecaption{Продолжение таблицы \ref{Mesh1:table}}
+	\centrow Имя & \centrow Параметры & \centrow Описание \\ \hline 
+	\finishhead
+	BuildShaders & props, global & Перестраивает шейдеры всех примитивов принимает настройки шейдера и глобальные настройки материалов. \\ \hline
+	UpdateShaders & props & Обновляет шейдеры, если поменялись локальные настройки игрового объекта.
+\end{xltabular}
+
+Свойства данного класса показаны в таблице \ref{Mesh2:table}.
+
+\begin{xltabular}{\textwidth}{|>{\raggedright\arraybackslash}p{6cm}|>{\raggedright\arraybackslash}X|}
+	\caption{Свойства класса Mesh\label{Mesh2:table}}\\ \hline
+	~ \centrow Имя & \centrow Описание \\ \hline
+	\endfirsthead
+	\continuecaption{Продолжение таблицы \ref{Mesh2:table}}
+	~ \centrow Имя & \centrow Описание \\ \hline 
+	\finishhead
+	Primitives & Массив примитивов меша. \\ \hline
+	Matrix & Матрица меша. Используется только в .glb моделях. \\ \hline
+	UseMeshMatrix & Флаг, который показывает, используется ли матрица меша.
+\end{xltabular}
+
+\subsubsection{Класс Primitive}
+Данный класс представляет собой графический примитив моделей. Он хранит геометрию, материал и необходим для рендеринга игровых объектов. В таблице \ref{Primitive1:table} представлены методы данного класса.
+
+\begin{xltabular}{\textwidth}{|>{\raggedright\arraybackslash}p{3.5cm}|>
+		{\raggedright\arraybackslash}p{3.5cm}|>
+		{\raggedright\arraybackslash}X|}
+	\caption{Методы класса Primitive\label{Primitive1:table}}\\ \hline
+	\centrow Имя & \centrow Параметры & \centrow Описание \\ \hline
+	\endfirsthead
+	\continuecaption{Продолжение таблицы \ref{Primitive1:table}}
+	\centrow Имя & \centrow Параметры & \centrow Описание \\ \hline 
+	\finishhead
+	BuildShader & props, global & Собирает шейдер с учетом глобальных настроек. \\ \hline
+	UpdateShader & props & Обновляет шейдер, если поменялись локальные настройки игрового объекта. \\ \hline
+	DrawPrimitive & cameraPos & Рендерит примитив. Передает текстуры и факторы в шейдер. \\ \hline
+	ValudateFlags & props & Используется при построении шейдера и валидирует конфликтующие настройки. \\ \hline
+	SetFactors & Нет & Передает в шейдер факторы материала. \\ \hline
+	SetTextures & Нет & Передает в шейдер текстуры
+\end{xltabular}
+
+Свойства данного класса показаны в таблице \ref{Primitive2:table}.
+
+\begin{xltabular}{\textwidth}{|>{\raggedright\arraybackslash}p{6cm}|>{\raggedright\arraybackslash}X|}
+	\caption{Свойства класса Primitive\label{Primitive2:table}}\\ \hline
+	~ \centrow Имя & \centrow Описание \\ \hline
+	\endfirsthead
+	\continuecaption{Продолжение таблицы \ref{Primitive2:table}}
+	~ \centrow Имя & \centrow Описание \\ \hline 
+	\finishhead
+	Material & Материал примитива. \\ \hline
+	SettingsFromModel & Настройки материала, которые были импортированы из модели. \\ \hline
+	GLBuffers & Список буферов, которые были использованы при инициализации объекта. Нужны для правильной очистки памяти при удалении объекта.
+\end{xltabular}
+
+\subsubsection{Класс Transform}
+Данный класс нужен для различных трансформаций объектов в сцене, таких как перемещение, поворот и масштаб. В таблице \ref{Transform1:table} представлены свойства данного класса.
+
+\begin{xltabular}{\textwidth}{|>{\raggedright\arraybackslash}p{6cm}|>{\raggedright\arraybackslash}X|}
+	\caption{Свойства класса Transform\label{Transform1:table}}\\ \hline
+	~ \centrow Имя & \centrow Описание \\ \hline
+	\endfirsthead
+	\continuecaption{Продолжение таблицы \ref{Transform1:table}}
+	~ \centrow Имя & \centrow Описание \\ \hline 
+	\finishhead
+	Box & сущность, необходимая для хранения границ модели игрового объекта. \\ \hline
+	ModelMatrix & Матрица модели. Собирается из свойств трансформации. \\ \hline
+	Position & Позиция игрового объекта в мировых координатах. \\ \hline
+	Rotation & Вращение объекта в градусах \\ \hline
+	Scale & Масштаб игрового объекта.
+\end{xltabular}
+
+\subsubsection{Класс DrawableObject}
+Данный класс является базовым классом для игровых объектах. Содержит базовые методы для рендеринга и построения шейдеров.  В таблице \ref{DrawableObject1:table} представлены методы данного класса.
+
+\begin{xltabular}{\textwidth}{|>{\raggedright\arraybackslash}p{3.5cm}|>{\raggedright\arraybackslash}p{3.5cm}|>{\raggedright\arraybackslash}X|}
+	\caption{Методы класса DrawableObject\label{DrawableObject1:table}}\\ \hline
+	\centrow Имя & \centrow Параметры & \centrow Описание \\ \hline
+	\endfirsthead
+	\continuecaption{Продолжение таблицы \ref{DrawableObject1:table}}
+	\centrow Имя & \centrow Параметры & \centrow Описание \\ \hline 
+	\finishhead
+	SetScene & scene & Устанавливает ссылку на сцену-владельца. Вызывается менеджером сцен при добавлении объекта. \\
+	\hline
+	DrawObjectWith
+	Camera & cam & Выполняет отрисовку объекта с использованием указанной камеры. Передаёт в шейдер матрицы вида и проекции камеры. \\
+	\hline
+	DrawObject & Нет & Выполняет отрисовку объекта. Если UseCamera = true, использует все камеры сцены; если false — использует единичные матрицы. \\
+	\hline
+	DrawObject & matrices[], camPosition & Приватная перегрузка. Для каждого примитива активирует шейдер, передаёт матрицы (модели, вида, проекции) и вызывает отрисовку примитива. \\
+	\hline
+	ChangeRender
+	Settings & settings & Изменяет настройки рендеринга для всех мешей объекта (текстуры, факторы материалов) и перестраивает шейдеры. \\
+	\hline
+	UpdateRender
+	Settings & Нет & Обновляет шейдеры всех мешей при изменении глобальных настроек приложения (например, модели освещения). \\
+	\hline
+	RayIntersects
+	AABB & rayOrigin, rayDirection, distance & Проверяет пересечение луча с ограничивающим прямоугольником (AABB) объекта. Возвращает true при пересечении и записывает расстояние до точки пересечения. Используется для рейкастинга. \\
+	\hline
+	Cleanup & Нет & Освобождает ресурсы: вызывает Dispose у трансформации и всех мешей, а также подавляет финализацию объекта.
+\end{xltabular}
+
+Свойства данного класса показаны в таблице \ref{DrawableObject2:table}.
+
+\begin{xltabular}{\textwidth}{|>{\raggedright\arraybackslash}p{5cm}|>{\raggedright\arraybackslash}X|}
+	\caption{Свойства класса DrawableObject\label{DrawableObject2:table}}\\ \hline
+	\centrow Имя & \centrow Описание \\ \hline
+	\endfirsthead
+	\continuecaption{Продолжение таблицы \ref{DrawableObject2:table}}
+	\centrow Имя & \centrow Описание \\ \hline 
+	\finishhead
+	Scene & Ссылка на текущую сцену, в которой находится объект. Устанавливается через метод SetScene. \\
+	\hline
+	Transform & Компонент трансформации объекта, хранящий позицию, поворот, масштаб и матрицу модели. \\
+	\hline
+	Tag & Строковый идентификатор объекта, используемый для поиска и группировки объектов в сцене. \\
+	\hline
+	Visible & Флаг видимости объекта. Если значение false, объект не отрисовывается, но продолжает существовать в сцене. \\
+	\hline
+	UseCamera & Флаг, определяющий, используется ли камера для отрисовки объекта. При значении false объект отрисовывается с единичными матрицами вида и проекции (экранное пространство). \\
+	\hline
+	ModelPath & Путь к файлу модели, из которой был загружен объект. Используется при сериализации сцены. \\
+	\hline
+	ModelIndex & Индекс модели в GLB-файле. Для STL-моделей всегда равен 0. \\
+	\hline
+	ID & Уникальный глобальный идентификатор объекта (GUID). Служит для однозначной идентификации объекта в сцене. \\
+	\hline
+	Meshes & Массив мешей, составляющих визуальное представление объекта. Каждый меш содержит набор примитивов с геометрией и материалами.
+\end{xltabular}
+
+\subsubsection{Класс DirectionalLight}
+Данный класс представляет направленный источник освещения. Направленный свет имитирует бесконечно удалённый источник, такой как Солнце, и характеризуется направлением лучей, цветом и интенсивностью. Направление задаётся углами рыскания (Yaw) и тангажа (Pitch). В таблице \ref{DirectionalLightProperties:table} представлены свойства данного класса.
+
+\begin{xltabular}{\textwidth}{|>{\raggedright\arraybackslash}p{5cm}|>{\raggedright\arraybackslash}X|}
+	\caption{Свойства класса DirectionalLight\label{DirectionalLightProperties:table}}\\ \hline
+	\centrow Имя & \centrow Описание \\ \hline
+	\endfirsthead
+	\continuecaption{Продолжение таблицы \ref{DirectionalLightProperties:table}}
+	\centrow Имя & \centrow Описание \\ \hline 
+	\finishhead
+	Tag & Строковый идентификатор источника света, используемый для поиска и идентификации в сцене. \\
+	\hline
+	Color & Цвет источника света. Задаётся в формате RGBA. По умолчанию — белый цвет. \\
+	\hline
+	Intensity & Интенсивность источника света. Значение не может быть отрицательным. По умолчанию — 1.0. \\
+	\hline
+	Yaw & Угол рыскания в градусах. Определяет поворот источника света вокруг вертикальной оси. Значение ограничено диапазоном от 0 до 360 градусов. При изменении автоматически пересчитывается вектор направления. \\
+	\hline
+	Pitch & Угол тангажа в градусах. Определяет наклон источника света вверх или вниз. Значение ограничено диапазоном от -90 до 90 градусов. При изменении автоматически пересчитывается вектор направления.
+\end{xltabular}
+
+\subsubsection{Класс PointLight}
+Данный класс представляет точечный источник освещения. Точечный свет излучает свет равномерно во все стороны из одной точки в пространстве. Интенсивность освещения от точечного источника убывает с расстоянием по квадратичному закону, что создаёт естественный эффект затухания. В таблице \ref{PointLightProperties:table} представлены свойства данного класса.
+
+\begin{xltabular}{\textwidth}{|>{\raggedright\arraybackslash}p{6cm}|>{\raggedright\arraybackslash}X|}
+	\caption{Свойства класса PointLight\label{PointLightProperties:table}}\\ \hline
+	\centrow Имя & \centrow Описание \\ \hline
+	\endfirsthead
+	\continuecaption{Продолжение таблицы \ref{PointLightProperties:table}}
+	\centrow Имя & \centrow Описание \\ \hline 
+	\finishhead
+	Tag & Строковый идентификатор источника света, используемый для поиска и идентификации в сцене. \\
+	\hline
+	Position & Позиция источника света в мировых координатах. \\
+	\hline
+	Color & Цвет источника света. Задаётся в формате RGBA. По умолчанию — белый цвет. \\
+	\hline
+	Intensity & Интенсивность источника света. Значение не может быть отрицательным. По умолчанию — 1.0. \\
+	\hline
+	Constant & Постоянный коэффициент затухания. Определяет базовую интенсивность света на нулевом расстоянии. Значение не может быть отрицательным. По умолчанию — 1.0. \\
+	\hline
+	Linear & Линейный коэффициент затухания. Определяет скорость убывания интенсивности с расстоянием. Значение не может быть отрицательным. По умолчанию — 0.09. \\
+	\hline
+	Quadratic & Квадратичный коэффициент затухания. Определяет ускоренное убывание интенсивности на больших расстояниях. Значение не может быть отрицательным. По умолчанию — 0.032.
+\end{xltabular}
+
+\subsubsection{Класс Spotlight}
+Данный класс представляет прожектор — источник света, излучающий свет в пределах заданного конуса. Прожектор характеризуется положением в пространстве, направлением, цветом, интенсивностью, коэффициентами затухания, а также углами внутреннего и внешнего конуса. В таблице \ref{SpotlightProperties:table} представлены свойства данного класса.
+
+\begin{xltabular}{\textwidth}{|>{\raggedright\arraybackslash}p{6cm}|>{\raggedright\arraybackslash}X|}
+	\caption{Свойства класса Spotlight\label{SpotlightProperties:table}}\\ \hline
+	\centrow Имя & \centrow Описание \\ \hline
+	\endfirsthead
+	\continuecaption{Продолжение таблицы \ref{SpotlightProperties:table}}
+	\centrow Имя & \centrow Описание \\ \hline 
+	\finishhead
+	Tag & Строковый идентификатор источника света, используемый для поиска и идентификации в сцене. \\
+	\hline
+	Position & Позиция прожектора в мировых координатах. \\
+	\hline
+	Color & Цвет источника света. Задаётся в виде вектора RGB. По умолчанию — белый цвет. \\
+	\hline
+	Yaw & Угол рыскания в градусах. Определяет поворот прожектора вокруг вертикальной оси. Значение ограничено диапазоном от 0 до 360 градусов. При изменении автоматически пересчитывается вектор направления. \\
+	\hline
+	Pitch & Угол тангажа в градусах. Определяет наклон прожектора вверх или вниз. Значение ограничено диапазоном от -90 до 90 градусов. При изменении автоматически пересчитывается вектор направления. \\
+	\hline
+	Intensity & Интенсивность источника света. Значение не может быть отрицательным. По умолчанию — 1.0. \\
+	\hline
+	Constant & Постоянный коэффициент затухания. Определяет базовую интенсивность света на нулевом расстоянии. Значение не может быть отрицательным. По умолчанию — 1.0. \\
+	\hline
+	Linear & Линейный коэффициент затухания. Определяет скорость убывания интенсивности с расстоянием. Значение не может быть отрицательным. По умолчанию — 0.09. \\
+	\hline
+	Quadratic & Квадратичный коэффициент затухания. Определяет ускоренное убывание интенсивности на больших расстояниях. Значение не может быть отрицательным. По умолчанию — 0.032. \\
+	\hline
+	InnerCutOff & Угол внутреннего конуса прожектора в градусах. Внутри этого угла свет достигает максимальной яркости. Значение ограничено диапазоном от 0 до 180 градусов. По умолчанию — 30 градусов. \\
+	\hline
+	OuterCutOff & Угол внешнего конуса прожектора в градусах. За пределами этого угла освещение полностью отсутствует. Между внутренним и внешним углами интенсивность линейно убывает. Значение ограничено диапазоном от 0 до 180 градусов. По умолчанию — 45 градусов.
+\end{xltabular}
+
+\subsubsection{Класс ShaderStorageBufferManager}
+Данный класс является обобщённым и предназначен для низкоуровневого управления буфером хранилища шейдеров (SSBO). Он используется менеджером света для загрузки, модификации и удаления источников света в видеопамяти GPU. Класс автоматически управляет выделением и перевыделением памяти, отслеживает количество активных источников и свободных мест. В таблице \ref{SSBOMethods:table} представлены методы данного класса.
+
+\begin{xltabular}{\textwidth}{|>{\raggedright\arraybackslash}p{3.5cm}|>{\raggedright\arraybackslash}p{3.5cm}|>{\raggedright\arraybackslash}X|}
+	\caption{Методы класса ShaderStorageBufferManager\label{SSBOMethods:table}}\\ \hline
+	\centrow Имя & \centrow Параметры & \centrow Описание \\ \hline
+	\endfirsthead
+	\continuecaption{Продолжение таблицы \ref{SSBOMethods:table}}
+	\centrow Имя & \centrow Параметры & \centrow Описание \\ \hline 
+	\finishhead
+	Clear & Нет & Очищает буфер: обнуляет счётчик активных источников, сбрасывает количество элементов и перезаписывает данные в видеопамяти. \\
+	\hline
+	UpdateLight & light, index & Обновляет данные источника света по указанному индексу. Вычисляет смещение в буфере, копирует структуру в память и отправляет изменения в GPU через BufferSubData. \\
+	\hline
+	RemoveLight & index & Выполняет логическое удаление источника света по индексу. Уменьшает счётчик активных источников, увеличивает счётчик свободных мест и устанавливает флаг isActive в 0. Физического сдвига данных не происходит. \\
+	\hline
+	AddLight & light & Добавляет новый источник света. При превышении ёмкости автоматически расширяет буфер в два раза. При наличии свободных мест размещает новый элемент на позиции ранее удалённого. Обновляет счётчик активных источников и отправляет данные в GPU. \\
+	\hline
+	Dispose & Нет & Освобождает неуправляемую память, выделенную через NativeMemory, и удаляет буфер OpenGL через glDeleteBuffer.
+\end{xltabular}
+
+\subsubsection{Класс Shader}
+Данный класс инкапсулирует шейдерную программу OpenGL. Он отвечает за компиляцию вершинного и фрагментного шейдеров, линковку программы, управление uniform-переменными и передачу данных в GPU. В таблице \ref{ShaderMethods:table} представлены методы данного класса.
+
+\begin{xltabular}{\textwidth}{|>{\raggedright\arraybackslash}p{3.5cm}|>{\raggedright\arraybackslash}p{3.5cm}|>{\raggedright\arraybackslash}X|}
+	\caption{Методы класса Shader\label{ShaderMethods:table}}\\ \hline
+	\centrow Имя & \centrow Параметры & \centrow Описание \\ \hline
+	\endfirsthead
+	\continuecaption{Продолжение таблицы \ref{ShaderMethods:table}}
+	\centrow Имя & \centrow Параметры & \centrow Описание \\ \hline 
+	\finishhead
+	Shader & props & Конструктор. Создаёт шейдерную программу через \texttt{GL.CreateProgram}, компилирует и прикрепляет вершинный и фрагментный шейдеры, линкует программу и кеширует расположения uniform-переменных. \\
+	\hline
+	Use & Нет & Активирует шейдерную программу для использования в текущем контексте рендеринга через GL.UseProgram. \\
+	\hline
+	SetMatrix4 & name, matrixPtr & Устанавливает матрицу 4x4 в uniform-переменную шейдера. Принимает указатель на массив из 16 чисел с плавающей точкой. \\
+	\hline
+	SetFloat & name, value & Устанавливает значение типа float в uniform-переменную шейдера. \\
+	\hline
+	SetInt & name, value & Устанавливает значение типа int в uniform-переменную шейдера. \\
+	\hline
+	SetVector3 & name, vec3 & Устанавливает трёхкомпонентный вектор в uniform-переменную шейдера. \\
+	\hline
+	SetVector4 & name, vec4 & Устанавливает четырёхкомпонентный вектор в uniform-переменную шейдера. \\
+	\hline
+	CreateAndAttach
+	Shader & type, handle, props & Статический метод. Создаёт шейдер указанного типа, вставляет сгенерированные макросы в исходный код, компилирует шейдер и прикрепляет его к программе. При включённом DEBUG\_MODE сохраняет скомпилированный код в файл. \\
+	\hline
+	ValidateFlags & props & Статический метод. Формирует строку с макросами на основе переданных свойств (настройки рендеринга, модель освещения, глобальные настройки) через GLSLMacrosBuilder. \\
+	\hline
+	CompileShader & descriptor & Статический метод. Компилирует шейдер через GL.CompileShader и проверяет статус компиляции. В случае ошибки выводит лог в консоль. \\
+	\hline
+	GetUniforms & Нет & Опрашивает активные uniform-переменные программы, получает их расположения через GL.GetUniformLocation и сохраняет в словаре для быстрого доступа. \\
+	\hline
+	Dispose & Нет & Удаляет шейдерную программу через GL.DeleteProgram.
+\end{xltabular}
+
+\subsection{Системное тестирование программной системы}
+Системное тестирование проводилось на основе описанного API и прецедентов использования системы, описанных в техническом задании. Проверялись ключевые функции программной системы: сохранение и загрузка сцены, добавление и удаление игровых объектов, работа с камерами, загрузка моделей в движок, изменение настроек рендеринга на рантайме, работа с источниками освещения, трансформация игровых объектов
+
+Тестирование выполнялось в операционной системе Windows 11. В качестве IDE была выбрана Visual Studio 2026. \ref{test_cases:table} является сводной таблицей тест-кейсов.
+
+\subsubsection{Сводная таблица тест-кейсов}
+
+\begin{xltabular}{\textwidth}{|>{\raggedright\arraybackslash}p{1.7cm}|>{\raggedright\arraybackslash}p{10cm}|>{\raggedright\arraybackslash}X|}
+	\caption{Сводная таблица тест-кейсов\label{test_cases:table}}\\ \hline
+	\centrow ID & \centrow Название тест-кейса & \centrow Результат \\ \hline
+	\endfirsthead
+	\continuecaption{Продолжение таблицы \ref{test_cases:table}}
+	\centrow ID & \centrow Название тест-кейса & \centrow Результат \\ \hline 
+	\finishhead
+	ТС-01 & Загрузка .stl модели через графический интерфейс & Пройден \\ \hline
+	ТС-02 & Загрузка .glb модели через графический интерфейс & Пройден \\ \hline
+	ТС-03 & Удаление игрового объекта через инспектор & Пройден \\ \hline
+	ТС-04 & Добавление камеры & Пройден \\ \hline
+	ТС-05 & Удаление камеры & Пройден \\ \hline
+	ТС-06 & Добавление источника освещения & Пройден \\ \hline
+	ТС-07 & Удаление источника освещения & Пройден \\ \hline
+	ТС-08 & Обновление источника света & Пройден \\ \hline
+	ТС-09 & Выгрузка сцены & Пройден \\ \hline
+	ТС-10 & Сериализация сцены при выходе из режима редактора & Пройден \\ \hline
+	ТС-11 & Десериализация сцены при входе в игру & Пройден \\ \hline
+	ТС-12 & Переключение модели шейдинга & Пройден
+\end{xltabular}
+
+\subsubsection{ТС-01. Загрузка .stl модели через графический интерфейс}
+\textbf{Предусловие:} приложение запущено в режиме редактирования.
+
+\textbf{Шаги:}
+\begin{enumerate}
+	\item Нажать кнопку "Загрузить модель".
+	\item Выбрать .stl файл в проводнике.
+\end{enumerate}
+
+\textbf{Ожидаемый результат:} система создаст игровой объект на основе модели и добавит его в сцену и в список объектов.
+
+\textbf{Фактический результат:} пройден.
+
+Внешний вид сцены и списка объектов показан в рисунке \ref{fig:TC-01}
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=1.0\textwidth]{"images/ТС-01.jpg"}
+	\caption{Внешний вид приложения после прохождения теста}
+	\label{fig:TC-01}
+\end{figure}
+
+\subsubsection{ТС-02. Загрузка .glb модели через графический интерфейс}
+\textbf{Предусловие:} приложение запущено в режиме редактирования.
+
+\textbf{Шаги:}
+\begin{enumerate}
+	\item Нажать кнопку "Загрузить модель".
+	\item Выбрать .glb файл в проводнике.
+\end{enumerate}
+
+\textbf{Ожидаемый результат:} система создаст игровой объект на основе модели и добавит его в сцену и в список объектов. Если в файле несколько моделей, система создаст объекты из каждого.
+
+\textbf{Фактический результат:} пройден.
+
+Внешний вид сцены и списка объектов показан в рисунке \ref{fig:TC-02}
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=1.0\textwidth]{"images/ТС-02.jpg"}
+	\caption{Внешний вид приложения после прохождения теста}
+	\label{fig:TC-02}
+\end{figure}
+
+\subsubsection{ТС-03. Удаление игрового объекта через инспектор}
+\textbf{Предусловие:} приложение запущено в режиме редактирования.
+
+\textbf{Шаги:}
+\begin{enumerate}
+	\item Нажать на нужный объект.
+	\item В инспекторе нажать кнопку "Удалить объект".
+\end{enumerate}
+
+\textbf{Ожидаемый результат:} система удалит объект из списка и из сцены.
+
+\textbf{Фактический результат:} пройден.
+
+Внешний вид сцены и списка объектов показан в рисунке \ref{fig:TC-03}
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=1.0\textwidth]{"images/ТС-03.jpg"}
+	\caption{Внешний вид приложения после удаления объекта}
+	\label{fig:TC-03}
+\end{figure}
+
+\subsubsection{ТС-04. Добавление камеры}
+\textbf{Предусловие:} в приложение загружена сцена.
+
+\textbf{Шаги:}
+\begin{enumerate}
+	\item Переопределить метод OnStart().
+	\item Создать камеру (Class Camera).
+	\item Добавить камеру в сцену командой CameraManager.AddCamera(cam).
+\end{enumerate}
+
+\textbf{Ожидаемый результат:} если в сцене есть объекты, они должны отображаться.
+
+\textbf{Фактический результат:} пройден.
+
+\subsubsection{ТС-05. Удаление камеры}
+\textbf{Предусловие:} в сцене создана и добавлена камера.
+
+\textbf{Шаги:}
+\begin{enumerate}
+	\item Вызвать CameraManager.RemoveCamera() в любом из хуков;.
+\end{enumerate}
+
+\textbf{Ожидаемый результат:} объекты должны перестать отображаться.
+
+\textbf{Фактический результат:} пройден.
+
+\subsubsection{ТС-06. Добавление источника освещения}
+\textbf{Предусловие:} в приложение загружена сцена.
+
+\textbf{Шаги:}
+\begin{enumerate}
+	\item Создать источник освещения (например класс DirectionalLight).
+	\item Вызвать метод LightManager.AddDirectionalLight() и передать туда созданный источник.
+\end{enumerate}
+
+\textbf{Ожидаемый результат:} при запуске игры объекты будут освещены созданным источником.
+
+\textbf{Фактический результат:} пройден.
+
+Освещенный объект показан на рисунке \ref{fig:TC-06}
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=1.0\textwidth]{"images/ТС-06.jpg"}
+	\caption{Объект освещенный созданным источником света}
+	\label{fig:TC-06}
+\end{figure}
+
+
+\subsubsection{ТС-07. Удаление источника освещения}
+\textbf{Предусловие:} источник освещения создан и добавлен в сцену.
+
+\textbf{Шаг:}
+Вызвать метод LightManager.RemoveDirectionalLights() и передать туда тэг созданного источника.
+
+\textbf{Ожидаемый результат:} если в сцене отсутствуют другие источники освещения, объекты не будут освещены.
+
+\textbf{Фактический результат:} пройден.
+
+Объект без освещения показан на рисунке \ref{fig:TC-07}
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=1.0\textwidth]{"images/ТС-07.jpg"}
+	\caption{Объект освещенный созданным источником света}
+	\label{fig:TC-07}
+\end{figure}
+
+\subsubsection{ТС-08. Обновление источника света}
+\textbf{Предусловие:} источник освещения, который нужно обновить создан и добавлен в сцену.
+
+\textbf{Шаг:}
+Вызвать метод LightManager.UpdateDirectionalLights() и передать туда тэг источника, который нужно обновить.
+
+\textbf{Ожидаемый результат:} Параметры обновленного источника освещения поменяются.
+
+\textbf{Фактический результат:} пройден.
+
+Объект без освещения показан на рисунке \ref{fig:TC-08}
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=1.0\textwidth]{"images/ТС-08.jpg"}
+	\caption{Объект освещенный обновленным источником света}
+	\label{fig:TC-08}
+\end{figure}
+
+\subsubsection{ТС-09. Выгрузка сцены}
+\textbf{Предусловие:} В приложение загружена сцена.
+
+\textbf{Шаг:}
+Вызвать метод SceneManager.UnloadScene().
+
+\textbf{Ожидаемый результат:} пользователю будет отображаться пустой черный экран.
+
+\textbf{Фактический результат:} пройден.
+
+\subsubsection{ТС-10. Сериализация сцены при выходе из режима редактора}
+\textbf{Предусловие:} Приложение запущено в режиме редактирования.
+
+\textbf{Шаги:}
+\begin{enumerate}
+	\item В сцену нужно добавить объекты с помощью графического интерфейса.
+	\item Выйти из приложения.
+\end{enumerate}
+
+\textbf{Ожидаемый результат:} В папке сборки создастся папка Saves и в нее будет положен json-файл с объектами сцены.
+
+\textbf{Фактический результат:} пройден.
+
+Содержимое созданного json-файла показано ниже.
+
+\begin{lstlisting}
+{
+	"Models": [
+	"C:\\Users\\it_ge\\Desktop\\Amethyst-game-engine\\Client\\bin\\Debug\\net10.0-windows10.0.17763.0\\Models\\Five-Seven pistol.glb"
+	],
+	"GameObjects": [
+	{
+		"Tag": "Untagged",
+		"Type": "GLB",
+		"ModelIndex": 0,
+		"GLBModelIndex": 0,
+		"Transform": {
+			"Position": [
+			0,
+			0,
+			0
+			],
+			"Rotation": [
+			0,
+			0,
+			0
+			],
+			"Scale": [
+			1,
+			1,
+			1
+			]
+		}
+	}
+	]
+}
+\end{lstlisting}
+
+\subsubsection{ТС-11. Десериализация сцены при входе в игру}
+\textbf{Предусловие:} В сцену должны быть добавлены объекты в режиме редактирования.
+
+\textbf{Шаг:}
+Запустить приложение.
+
+\textbf{Ожидаемый результат:} Система восстановит сцену используя для этого json-файл.
+
+\textbf{Фактический результат:} пройден.
+
+\subsubsection{ТС-12. Переключение модели шейдинга}
+\textbf{Предусловие:} Приложение запущено.
+
+\textbf{Шаг:}
+В любом из хуков обратиться к свойству SceneManager.Application.ShadingModel и передать в него новую модель освещения.
+
+\textbf{Ожидаемый результат:} Освещение изменится.
+
+\textbf{Фактический результат:} пройден.
+
+На рисунке \ref{fig:TC-12_1} показана модель освещения до изменения.
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=1.0\textwidth]{"images/ТС-12_1.jpg"}
+	\caption{Объект при использовании освещения Блинна-Фонга}
+	\label{fig:TC-12_1}
+\end{figure}
+
+На рисунке \ref{fig:TC-12_2} показана модель освещения после изменения.
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=1.0\textwidth]{"images/ТС-12_2.jpg"}
+	\caption{Объект при использовании освещения Unlit}
+	\label{fig:TC-12_2}
+\end{figure}
